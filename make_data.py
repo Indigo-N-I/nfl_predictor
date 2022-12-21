@@ -4,20 +4,17 @@ import csv
 
 def window(team, week, season, window_size, get_all = False):
     global teams
-    # assert week >= window_size, f'WINDOW SIZE {window_size} MUST BE SMALLER THEN NUMBER OF WEEKS PLAYED {week}'
     team_data = pd.read_csv(f'data\{team}.csv')
 
     team_data = team_data[team_data['schedule_season'] == season]
-    # print(set(team_data['schedule_week']))
     if str(week) not in set(team_data['schedule_week']):
         return None
+
     team_data['is_home'] = (team_data['team_home'] == team)
     team_data['is_away'] = (team_data['team_away'] == team)
-    # print(len([a[1:-1].split(',') for a in team_data['weather_humidity'][:]]))
     team_data['no_humidity'] = [float(a[1:-1].split(',')[-1]) for a in team_data['weather_humidity'][:]]
     team_data['weather_humidity'] = [float(a[1:-1].split(',')[0]) for a in team_data['weather_humidity'][:]]
 
-    # print([a for a in team_data['weather_wind_mph']])
     team_data['no_wind'] = [float(a[1:-1].split(',')[-1]) for a in team_data['weather_wind_mph'][:]]
     team_data['weather_wind_mph'] = [float(a[1:-1].split(',')[0]) for a in team_data['weather_wind_mph'][:]]
 
@@ -26,11 +23,9 @@ def window(team, week, season, window_size, get_all = False):
 
     team_data['no_spread'] = [float(a[1:-1].split(',')[-1]) for a in team_data['spread_favorite'][:]]
     team_data['spread'] = [float(a[1:-1].split(',')[0]) for a in team_data['spread_favorite'][:]]
-    # print(teams['team_name'], team)
-    # print(team)
-    # print('should be retrieveing this', teams[teams['team_name'] == team]['team_id_pfr'].tolist()[0])
+
     team_symbol = teams[teams['team_name'] == team]['team_id_pfr'].tolist()[0]
-    # print(team_symbol)
+
     team_data['is_fav'] = team_data['team_favorite_id'] == team_symbol
 
     team_data['no_over_under'] = [float(a[1:-1].split(',')[-1]) for a in team_data['over_under_line'][:]]
@@ -42,21 +37,17 @@ def window(team, week, season, window_size, get_all = False):
     def get_data_for_week(w):
         min_index = team_data.index[team_data['schedule_week'] == str(1)].tolist()[0]
         desired_index = team_data.index[team_data['schedule_week'] == str(week)].tolist()[0]
-        # print('here')
+
         if min_index < desired_index - window_size:
             return None, None
-        # print([i for i in range(desired_index - window_size, desired_index + 1)])
+
         data = team_data.iloc[[i - min_index for i in range(desired_index - window_size, desired_index + 1)]]
         x = {}
-        # print(data)
-        # for r in data:
-        #     print(r)
+
         for i in range(len(data)):
             for col in ['schedule_week', 'schedule_playoff', 'is_fav', 'no_over_under', 'no_over_under', 'spread', 'no_spread', 'stadium_neutral', 'no_wind', 'weather_wind_mph', 'no_humidity', 'weather_humidity', 'weather_detail', 'score', 'opp_score']:
-                # print(col + f'{i}')
-                # print(data.iloc[i][col])
+
                 x[col + f'{i}'] = data.iloc[i][col]
-                # x: [is_playoff,is_home, is_fav, spread, over_under_line, stadium_neutral,weather_temperature,weather_wind_mph,weather_humidity,weather_detail]
 
         y = { 'score': x['score0'],
             'opp_score': x['opp_score0']
@@ -74,17 +65,15 @@ def window(team, week, season, window_size, get_all = False):
     xs = []
     ys = []
     for w in weeks:
-        # print('in here')
+
         x, y = get_data_for_week(w)
         if x and y:
             xs.append(x)
             ys.append(y)
-    # assert , f'WINDOW SIZE {window_size} too large for week {week}'
+
     data['x'] = xs
     data['y'] = ys
-    # print(desired_index)
-    # print(team_data)
-    # print(data)
+
     with open(f'data_windowed\{team}_{window_size}_{season}.csv', 'w') as f:
         for key in data.keys():
             f.write("%s,%s\n"%(key,data[key]))
@@ -100,9 +89,7 @@ def main():
                 if team != 'Arizona Cardinals':
                     print(f'working on {team} for year {year} on window {win}')
                     window(team, 1, year,win, get_all = True)
-    # teams = pd.read_csv('data\nfl_teams.csv')
-    # print("here")
-    # window('Arizona Cardinals', 1, 1887, 1, get_all = True)
+
     '''
     to make the data:
         get each of the teams
