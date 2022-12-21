@@ -35,10 +35,15 @@ def window(team, week, season, window_size, get_all = False):
     team_data['opp_score'] = team_data['score_home'] * team_data['is_away'] + team_data['score_away'] * team_data['is_home']
 
     def get_data_for_week(w):
+        # print(f'getting data for week {w} with window {window_size}')
         min_index = team_data.index[team_data['schedule_week'] == str(1)].tolist()[0]
-        desired_index = team_data.index[team_data['schedule_week'] == str(week)].tolist()[0]
-
-        if min_index < desired_index - window_size:
+        if str(w) not in list(team_data['schedule_week']):
+            # print('here')
+            return None, None
+        desired_index = team_data.index[team_data['schedule_week'] == str(w)].tolist()[0]
+        # print(desired_index, window_size, min_index)
+        if min_index > desired_index - window_size:
+            # print(f"week {w} for {window_size} exits")
             return None, None
 
         data = team_data.iloc[[i - min_index for i in range(desired_index - window_size, desired_index + 1)]]
@@ -47,8 +52,8 @@ def window(team, week, season, window_size, get_all = False):
         for i in range(len(data)):
             for col in ['schedule_week', 'schedule_playoff', 'is_fav', 'no_over_under', 'no_over_under', 'spread', 'no_spread', 'stadium_neutral', 'no_wind', 'weather_wind_mph', 'no_humidity', 'weather_humidity', 'weather_detail', 'score', 'opp_score']:
 
-                x[col + f'{i}'] = data.iloc[i][col]
-
+                x[col + f'{i}'] = data.iloc[-(i+1)][col]
+        # print(x)
         y = { 'score': x['score0'],
             'opp_score': x['opp_score0']
         }
@@ -64,9 +69,11 @@ def window(team, week, season, window_size, get_all = False):
     data = {}
     xs = []
     ys = []
+    print(weeks)
     for w in weeks:
-
+        print(f'doing week {w}')
         x, y = get_data_for_week(w)
+        # print(x,y)
         if x and y:
             xs.append(x)
             ys.append(y)
@@ -85,10 +92,10 @@ def main():
     t = teams['team_name']
     for team in t:
         for year in range(1966, 2023):
-            for win in [0,1,2,3,4,5,6]:
-                if team != 'Arizona Cardinals':
-                    print(f'working on {team} for year {year} on window {win}')
+            for win in [3,4,5,6,0,1,2]:
+                    # print(f'working on {team} for year {year} on window {win}')
                     window(team, 1, year,win, get_all = True)
+
 
     '''
     to make the data:
