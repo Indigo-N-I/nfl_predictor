@@ -2,6 +2,9 @@ import pandas as pd
 import sklearn
 import csv
 import ast
+from sklearn.linear_model import LinearRegression
+from os import listdir
+from os.path import isfile, join
 
 def window(team, week, season, window_size, get_all = False):
     global teams
@@ -86,7 +89,7 @@ def window(team, week, season, window_size, get_all = False):
         for key in data.keys():
             f.write("%s,%s\n"%(key,data[key]))
 
-def read_data(file):
+def read_data(file, ignore_weather = True, drop_week = True):
     d = {}
     with open(file, 'r') as data:
         for line in data:
@@ -97,7 +100,51 @@ def read_data(file):
     # print(d['x'].split('},'))
     # translate_to_dict(d['x'])
     x = pd.DataFrame.from_dict(d['x'])
+    for col in x:
+        if drop_week and 'schedule_week' in col:
+            x = x.drop(col, axis = 1)
+        if 'weather_detail' in col:
+            if ignore_weather:
+                 x = x.drop(col, axis = 1)
+            else:
+                x[col] = [ast.literal_eval(b) for b in x[col].tolist()]
     y = pd.DataFrame.from_dict(d['y'])
+    return x, y
+
+def make_model(x_train, y_train, x_test= None, y_test= None, model = LinearRegression()):
+    # print(x[:14], y[:14])
+    reg = model.fit(x_train, y_train)
+    # print(reg.score(x, y))
+    for a in reg.coef_:
+        print(a)
+        print('new line')
+    print(reg.score(x_train, y_train))
+
+def get_data(window_size = 0, test_years = [2022,2021,2013]):
+    has_test = False
+    has_train = False
+    for f in listdir('data_windowed'):
+        if '_' + str(window_size) + '_' in f:
+            x, y = read_data('data_windowed\\' + f)
+            # print(f'read {f}')
+            if int(f[-8:-4]) in test_years:
+                if not has_test:
+                    has_test = True
+                    x_test = x
+                    y_test = y
+                else:
+                    x_test = pd.concat([x_test, x]).reset_index().drop('index', axis = 1)
+                    y_test = pd.concat([y_test, y]).reset_index().drop('index', axis = 1)
+            else:
+                if not has_train:
+                    has_train = True
+                    x_train = x
+                    y_train = y
+                else:
+                    x_train = pd.concat([x_train, x]).reset_index().drop('index', axis = 1)
+                    y_train = pd.concat([y_train, y]).reset_index().drop('index', axis = 1)
+    return x_train, x_test, y_train, y_test
+    # onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 def main():
     global teams
@@ -123,4 +170,19 @@ def main():
     '''
 
 if __name__ == "__main__":
-    read_data('data_windowed\Arizona Cardinals_0_1994.csv')
+    # x,y = read_data('data_windowed\Arizona Cardinals_0_1994.csv')
+    # x_1,y_1 = read_data('data_windowed\Arizona Cardinals_0_1995.csv')
+
+    # result = pd.concat([x,x_1]).reset_index()
+    # result = result.drop('index', axis = 1)
+    # print(result)
+    # print(x)
+    # print([ast.literal_eval(b) for b in x['weather_detail0'].tolist()])
+    # print(ast.literal_eval(x['weather_detail0'][0]))
+    # make_model(x,y)
+    x_train, x_test, y_train, y_test = get_data(window_size = 4)
+    # print(x_train)
+    # print(y_train)
+    # print(x_test)
+    # print(y_test)
+    make_model(x_train, y_train, x_test, y_test)
