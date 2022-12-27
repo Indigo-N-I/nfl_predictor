@@ -1,6 +1,7 @@
 import pandas as pd
 import sklearn
 import csv
+import ast
 
 def window(team, week, season, window_size, get_all = False):
     global teams
@@ -85,6 +86,18 @@ def window(team, week, season, window_size, get_all = False):
         for key in data.keys():
             f.write("%s,%s\n"%(key,data[key]))
 
+def read_data(file):
+    d = {}
+    with open(file, 'r') as data:
+        for line in data:
+            d[line[:line.index(',')]] = ast.literal_eval(line[line.index(',')+1:-1])
+            # print(line[:line.index(',')], line[line.index(',')+1:])
+            # print(d)
+
+    # print(d['x'].split('},'))
+    # translate_to_dict(d['x'])
+    x = pd.DataFrame.from_dict(d['x'])
+    y = pd.DataFrame.from_dict(d['y'])
 
 def main():
     global teams
@@ -95,8 +108,6 @@ def main():
             for win in [3,4,5,6,0,1,2]:
                     # print(f'working on {team} for year {year} on window {win}')
                     window(team, 1, year,win, get_all = True)
-
-
     '''
     to make the data:
         get each of the teams
@@ -112,4 +123,4 @@ def main():
     '''
 
 if __name__ == "__main__":
-    main()
+    read_data('data_windowed\Arizona Cardinals_0_1994.csv')
